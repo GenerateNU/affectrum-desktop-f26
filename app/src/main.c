@@ -2,6 +2,10 @@
 #include <zephyr/kernel.h>
 // zephyr/device.h is included eventually through kernel.h
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/logging/log.h>
+
+// quotes (not <>) tell the compiler to look relative to this file first, which is how it finds our own headers
+#include "BLE/BLE.h"
 
 // This is accessing the DeviceTree node through its label (can see the entire devicetree in generated zephyr.dts file in the build directory)
 #define LED2 DT_ALIAS(led0)
@@ -10,8 +14,16 @@
 // you can see this^^ in code if you search for the 'zephyr/boards/nordic/nrf54l15dk/nrf54l15dk_common.dtsi' file
 static const struct gpio_dt_spec led_2 = GPIO_DT_SPEC_GET(LED2, gpios);
 
+LOG_MODULE_REGISTER(app, LOG_LEVEL_DBG);
+
 int main(void)
 {
+    // start advertising first; the LED keeps blinking either way so we can tell the board is alive
+    if (ble_init() != 0)
+    {
+        LOG_ERR("BLE setup failed, continuing without it\n");
+    }
+
     // led_0.port is used because you need to check if the gpio controller itself is ready to be used, if you just do led_0.pin you will get a number like '9'
     if (!device_is_ready(led_2.port))
     {
@@ -37,7 +49,7 @@ int main(void)
         {
             return 0;
         }
-        printk("LED is now in state: %d", state);
+        LOG_DBG("LED is now in state: %d", state);
 
         k_msleep(4000);
     }
