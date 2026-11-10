@@ -1,0 +1,68 @@
+// TI DRV8311P motor driver wired to the nRF52833 DK Arduino header.
+// AD0 and AD1 are tied to GND, which gives this DRV8311P tSPI device ID 0.
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+//For load cell
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/adc/nrf-saadc.h>
+
+/ {
+    zephyr,user {
+        io-channels = <&adc 0>;
+    };
+};
+
+&adc {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    status = "okay";
+
+    channel@0 {
+        reg = <0>;
+        /* gain 1/6 with the 0.6 V internal reference measures 0 to 3.6 V.
+         * Once you know the amp output stays under ~1 V, ADC_GAIN_1_2 (0 to 1.2 V) gives finer steps. */
+        zephyr,gain = "ADC_GAIN_1_6";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 40)>;
+        /* single-ended: the NE5532 amp output on AIN0 (P0.02), measured against GND */
+        zephyr,input-positive = <NRF_SAADC_AIN0>;
+        zephyr,resolution = <14>;
+        zephyr,oversampling = <4>;   /* 2^4 = 16 samples averaged per reading */
+    };
+};
+
+&pinctrl {
+	// PWM1 channel 0 drives P1.04 (Arduino D3). PWM0 is left alone because the board uses it for LED1.
+	pwm1_default: pwm1_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 4)>;
+		};
+	};
+
+	pwm1_sleep: pwm1_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 4)>;
+			low-power-enable;
+		};
+	};
+};
+
+&pwm1 {
+	status = "okay";
+	pinctrl-0 = <&pwm1_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// arduino_spi is SPIM3: D13 SCK, D12 MISO, D11 MOSI, and chip select 0 is D10
+&arduino_spi {
+	drv8311: drv8311@0 {
+		compatible = "ti,drv8311";
+		reg = <0>;                     // use chip select 0 (D10 -> nSCS)
+		spi-max-frequency = <8000000>; // 8 MHz (the chip allows up to 10 MHz); one 32-bit frame takes 4 us
+
+		pwms = <&pwm1 0 PWM_KHZ(20) PWM_POLARITY_NORMAL>;                      // D3 -> PWM_SYNC
+		sleep-gpios = <&arduino_header ARDUINO_HEADER_R3_D4 GPIO_ACTIVE_LOW>;   // D4 -> nSLEEP
+		fault-gpios = <&arduino_header ARDUINO_HEADER_R3_D2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; // D2 <- nFAULT
+	};
+};

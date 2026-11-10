@@ -5,10 +5,19 @@ cmake_minimum_required(VERSION 3.20)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 # populated the $PROJECT_NAME var and this is what the output files are named 
-project(firepod)
+project(Affectrum)
 
 # app is a predesignated target that zephyr uses
-target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE
+    src/main.c
+    src/BLE/BLE.c
+    src/BLE/gatt.c
+    src/motors/motors.c
+    src/motors/foc.c
+    src/load-cell/loadCell.c
+    # TEMPORARY: Button 1 simulates a dispense (remove when real dispensing exists)
+    src/test/test_dispense.c
+)
 
 
 #[[
