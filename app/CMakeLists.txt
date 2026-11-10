@@ -11,6 +11,12 @@ project(Affectrum)
 target_sources(app PRIVATE
     src/main.c
     src/BLE/BLE.c
+    src/BLE/gatt.c
+    src/motors/motors.c
+    src/motors/foc.c
+    src/load-cell/loadCell.c
+    # TEMPORARY: Button 1 simulates a dispense (remove when real dispensing exists)
+    src/test/test_dispense.c
 )
 
 
