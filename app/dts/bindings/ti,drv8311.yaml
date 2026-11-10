@@ -1,0 +1,24 @@
+# Tells the devicetree what a "ti,drv8311" node is allowed to contain.
+# Zephyr has no DRV8311 driver, so this only describes the wiring; src/motor/motor.c does the talking.
+description: TI DRV8311P three-phase BLDC motor driver with tSPI and internal PWM generation
+
+compatible: "ti,drv8311"
+
+# adds reg, spi-max-frequency, etc. and makes this node a child of an SPI bus
+include: spi-device.yaml
+
+properties:
+  pwms:
+    type: phandle-array
+    required: true
+    description: PWM output wired to PWM_SYNC. The DRV8311 uses it to calibrate its own PWM clock.
+
+  sleep-gpios:
+    type: phandle-array
+    required: true
+    description: Wired to nSLEEP. Flag it GPIO_ACTIVE_LOW so "active" means asleep.
+
+  fault-gpios:
+    type: phandle-array
+    required: true
+    description: nFAULT output (open drain, low when a fault is latched).
